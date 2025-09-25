@@ -1,7 +1,7 @@
 # VozNotif
 ## App made to track Serbian Rail annoucments and email them to the user
 
-#Usage
+# Usage
 The app can either be compiled or ran.
 ```
 go build [-o target] main.go
