@@ -65,7 +65,6 @@ func hashString(s string) string {
 }
 
 func sendEmail(subject, message string) error {
-	fmt.Println(senderPassword)
 	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
 	message = strings.Replace(message, "<p>", "", -1)
 	message = strings.Replace(message, "</p>", "", -1)
@@ -99,12 +98,13 @@ func main() {
 	}
 
 	lastHash := loadLastHash()
+	sum := sha256.Sum256(body)
+	h := fmt.Sprintf("%x", sum)
+	if h != lastHash {
 
 	for _, item := range items {
 		content := item.Content.Rendered
 		if containsKeyword(content, keywords) {
-			h := hashString(content)
-			if h != lastHash {
 				if err := sendEmail("Proveri Obavestenja Srbija Voz",content); err != nil {
 					fmt.Println("Email error:", err)
 					return
@@ -114,7 +114,7 @@ func main() {
 				} else {
 					fmt.Println("Email sent and hash updated.")
 				}
-				break // Stop after sending one new email
+				return // Stop after sending one new email
 			}
 		}
 	}
