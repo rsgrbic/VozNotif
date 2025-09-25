@@ -32,10 +32,10 @@ var (
 	smtpPort = "587"
 
 
-	senderEmail    = "kica0007@gmail.com"
+	senderEmail    = os.Getenv("SMPT_ADDR")
 	senderPassword = os.Getenv("SMTP_PASS")
 
-	recipientEmail = "kica0007@gmail.com"
+	recipientEmail = senderEmail
 )
 
 func containsKeyword(s string, keywords []string) bool {
@@ -60,9 +60,6 @@ func saveLastHash(hash string) error {
 	return ioutil.WriteFile(hashFile, []byte(hash), 0644)
 }
 
-func hashString(s string) string { 
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
-}
 
 func sendEmail(subject, message string) error {
 	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
@@ -102,20 +99,19 @@ func main() {
 	h := fmt.Sprintf("%x", sum)
 	if h != lastHash {
 
-	for _, item := range items {
-		content := item.Content.Rendered
-		if containsKeyword(content, keywords) {
+		for _, item := range items {
+			content := item.Content.Rendered
+			if containsKeyword(content, keywords) {
 				if err := sendEmail("Proveri Obavestenja Srbija Voz",content); err != nil {
 					fmt.Println("Email error:", err)
 					return
 				}
-				if err := saveLastHash(h); err != nil {
-					fmt.Println("Save hash error:", err)
-				} else {
-					fmt.Println("Email sent and hash updated.")
-				}
-				return // Stop after sending one new email
+
+				fmt.Println("Email sent")
+				break  // Stop after sending one new email
 			}
 		}
+		if err := saveLastHash(h); err != nil {
+		fmt.Println("Save hash error:", err)}
 	}
 }
