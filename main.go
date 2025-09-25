@@ -1,0 +1,121 @@
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/smtp"
+	"os"
+	"strings"
+)
+
+type Content struct {
+	Rendered string `json:"rendered"`
+}
+
+type Item struct {
+	Content Content `json:"content"`
+}
+
+const (
+	urlToFetch = "https://www.srbvoz.rs/wp-json/wp/v2/info_post?per_page=10"
+	hashFile   = "lasthash.txt"
+)
+
+var (
+	keywords = []string{"zemuna", "lazarevac", "mladenovac"}
+
+	smtpHost = "smtp.gmail.com"
+	smtpPort = "587"
+
+
+	senderEmail    = "kica0007@gmail.com"
+	senderPassword = os.Getenv("SMTP_PASS")
+
+	recipientEmail = "kica0007@gmail.com"
+)
+
+func containsKeyword(s string, keywords []string) bool {
+	s = strings.ToLower(s)
+	for _, kw := range keywords {
+		if strings.Contains(s, strings.ToLower(kw)) {
+			return true
+		}
+	}
+	return false
+}
+
+func loadLastHash() string {
+	b, err := ioutil.ReadFile(hashFile)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+func saveLastHash(hash string) error {
+	return ioutil.WriteFile(hashFile, []byte(hash), 0644)
+}
+
+func hashString(s string) string { 
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
+}
+
+func sendEmail(subject, message string) error {
+	fmt.Println(senderPassword)
+	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
+	message = strings.Replace(message, "<p>", "", -1)
+	message = strings.Replace(message, "</p>", "", -1)
+
+	msg := "From: " + senderEmail + "\r\n" +
+		"To: " + recipientEmail + "\r\n" +
+		"Subject: " + subject + "\r\n\r\n" +
+		message + "\r\n"
+
+	return smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, []string{recipientEmail}, []byte(msg))
+}
+
+func main() {
+	resp, err := http.Get(urlToFetch)
+	if err != nil {
+		fmt.Println("Fetch error:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Read error:", err)
+		return
+	}
+
+	var items []Item
+	if err := json.Unmarshal(body, &items); err != nil {
+		fmt.Println("JSON error:", err)
+		return
+	}
+
+	lastHash := loadLastHash()
+
+	for _, item := range items {
+		content := item.Content.Rendered
+		if containsKeyword(content, keywords) {
+			h := hashString(content)
+			if h != lastHash {
+				if err := sendEmail("Proveri Obavestenja Srbija Voz",content); err != nil {
+					fmt.Println("Email error:", err)
+					return
+				}
+				if err := saveLastHash(h); err != nil {
+					fmt.Println("Save hash error:", err)
+				} else {
+					fmt.Println("Email sent and hash updated.")
+				}
+				break // Stop after sending one new email
+			}
+		}
+	}
+}
