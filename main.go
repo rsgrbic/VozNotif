@@ -18,7 +18,9 @@ type Content struct {
 
 type Item struct {
 	Content Content `json:"content"`
+	Date string `json:"date"`
 }
+
 
 const (
 	urlToFetch = "https://www.srbvoz.rs/wp-json/wp/v2/info_post?per_page=10"
@@ -61,7 +63,7 @@ func saveLastHash(hash string) error {
 }
 
 
-func sendEmail(subject, message string) error {
+func sendEmail(subject, message, date string) error {
 	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
 	message = strings.Replace(message, "<p>", "", -1)
 	message = strings.Replace(message, "</p>", "", -1)
@@ -69,7 +71,8 @@ func sendEmail(subject, message string) error {
 	msg := "From: " + senderEmail + "\r\n" +
 		"To: " + recipientEmail + "\r\n" +
 		"Subject: " + subject + "\r\n\r\n" +
-		message + "\r\n"
+		message + "\r\n"+
+		date +"\r\n"
 
 	return smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, []string{recipientEmail}, []byte(msg))
 }
@@ -102,7 +105,8 @@ func main() {
 		for _, item := range items {
 			content := item.Content.Rendered
 			if containsKeyword(content, keywords) {
-				if err := sendEmail("Proveri Obavestenja Srbija Voz",content); err != nil {
+				date:=item.Date
+				if err := sendEmail("Proveri Obavestenja Srbija Voz",content,date); err != nil {
 					fmt.Println("Email error:", err)
 					return
 				}
