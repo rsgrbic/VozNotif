@@ -32,7 +32,7 @@ var (
 	smtpPort = "587"
 
 
-	senderEmail    = os.Getenv("SMPT_ADDR")
+	senderEmail    = os.Getenv("SMTP_ADDR")
 	senderPassword = os.Getenv("SMTP_PASS")
 
 	recipientEmail = senderEmail
