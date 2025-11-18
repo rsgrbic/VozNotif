@@ -98,24 +98,31 @@ func main() {
 	}
 
 	lastHash := loadLastHash()
-	sum := sha256.Sum256(body)
-	h := fmt.Sprintf("%x", sum)
-	if h != lastHash {
-
-		for _, item := range items {
-			content := item.Content.Rendered
-			if containsKeyword(content, keywords) {
-				date:=item.Date
-				if err := sendEmail("Proveri Obavestenja Srbija Voz",content,date); err != nil {
-					fmt.Println("Email error:", err)
-					return
-				}
-
-				fmt.Println("Email sent")
-				break  // Stop after sending one new email
-			}
-		}
-		if err := saveLastHash(h); err != nil {
-		fmt.Println("Save hash error:", err)}
+	
+	var latestItem *Item
+	for _, item := range items {
+	    if containsKeyword(item.Content.Rendered, keywords) {
+	        latestItem = &item
+	        break // stop after finding the first match (newest one)
+	    }
+	}
+	
+	if latestItem != nil {
+	    content := latestItem.Content.Rendered
+	    sum := sha256.Sum256([]byte(content))
+	    h := fmt.Sprintf("%x", sum)
+	
+	    if h != lastHash {
+	        date := latestItem.Date
+	        if err := sendEmail("Proveri Obavestenja Srbija Voz", content, date); err != nil {
+	            fmt.Println("Email error:", err)
+	        } else {
+	            fmt.Println("Email sent")
+	        }
+	
+	        if err := saveLastHash(h); err != nil {
+	            fmt.Println("Save hash error:", err)
+	        }
+	    }
 	}
 }
