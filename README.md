@@ -17,7 +17,7 @@ Your SMTP credentials must be set as environment variables.
 ```
 SMTP_ADDR='Your Email'
 SMTP_PASS='Your access token'
-
+```
 My usage is with the executable as a cron job. Define yours.
 ```
 0-45/5 16 * * 2,3,4 ~/VozNotif/checkVozNotif >> notif.log 2>&1
